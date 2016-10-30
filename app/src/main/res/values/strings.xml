@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">ICEpj</string>
+    <string name="search_btn">Search Movie</string>
+    <string name="title">Title: </string>
+    <string name="released">Released: </string>
+    <string name="duration">Duration: </string>
+    <string name="director">Director: </string>
+    <string name="Genre">Genre: </string>
+    <string name="Writer">Writers: </string>
+    <string name="actors">Actors: </string>
+    <string name="plot">Plot: </string>
+    <string name="textview_hint">Write movie here</string>
+</resources>
