@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements RestApiInterface,
         GridLayoutManager gridLayoutManager =
                 new GridLayoutManager(this, getResources().getInteger(R.integer.grid_column_count));
         mMovieListRecyclerView.setLayoutManager(gridLayoutManager);
+        
 
     }
 

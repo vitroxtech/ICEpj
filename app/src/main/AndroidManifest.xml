@@ -18,6 +18,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".DetailActivity"></activity>
+        <service android:name=".Network.RestApiService"></service>
     </application>
 
 </manifest>
