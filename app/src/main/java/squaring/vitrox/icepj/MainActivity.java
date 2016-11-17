@@ -3,6 +3,7 @@ package squaring.vitrox.icepj;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.os.Handler;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -13,30 +14,34 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
-import java.util.List;
 
 import squaring.vitrox.icepj.Adapter.MoviesAdapter;
 import squaring.vitrox.icepj.Adapter.OnItemClickListener;
 import squaring.vitrox.icepj.Helper.Config;
+import squaring.vitrox.icepj.Helper.RestApiReceiver;
 import squaring.vitrox.icepj.Model.MovieDetail;
-import squaring.vitrox.icepj.Network.RestApiClient;
-import squaring.vitrox.icepj.Network.RestApiInterface;
+import squaring.vitrox.icepj.Model.Movies;
+import squaring.vitrox.icepj.Network.RestApiService;
 
-public class MainActivity extends AppCompatActivity implements RestApiInterface, OnItemClickListener {
+
+public class MainActivity extends AppCompatActivity implements RestApiReceiver.Receiver, OnItemClickListener {
 
     private RecyclerView mMovieListRecyclerView;
     private MoviesAdapter mMovieAdapter;
     private Button mSearchB;
     private EditText mSearchText;
     private ProgressBar mProgress;
+    RestApiReceiver mReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mReceiver= new RestApiReceiver(new Handler());
+        mReceiver.setReceiver(this);
+
         mProgress = (ProgressBar) findViewById(R.id.spinner);
         mSearchB = (Button) findViewById(R.id.search_button);
         mSearchB.setOnClickListener(new View.OnClickListener() {
@@ -52,21 +57,6 @@ public class MainActivity extends AppCompatActivity implements RestApiInterface,
         GridLayoutManager gridLayoutManager =
                 new GridLayoutManager(this, getResources().getInteger(R.integer.grid_column_count));
         mMovieListRecyclerView.setLayoutManager(gridLayoutManager);
-        
-
-    }
-
-    @Override
-    public void onListLoaded(List<MovieDetail> movies) {
-        mMovieAdapter.addData(movies);
-        mProgress.setVisibility(View.GONE);
-        mMovieListRecyclerView.setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    public void onError(String error) {
-        mProgress.setVisibility(View.GONE);
-        Snackbar.make(findViewById(android.R.id.content), error, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
@@ -86,13 +76,29 @@ public class MainActivity extends AppCompatActivity implements RestApiInterface,
         hideKeyboard();
         mProgress.setVisibility(View.VISIBLE);
         mMovieListRecyclerView.setVisibility(View.GONE);
-        RestApiClient rc = new RestApiClient();
-        rc.addListener(this);
-        rc.execute(mSearchText.getText().toString());
+        Intent i = new Intent(this, RestApiService.class);
+        i.putExtra(Config.MOVIE_SERVICE_PARAM, mSearchText.getText().toString());
+        i.putExtra("hh", mReceiver);
+        startService(i);
     }
 
     private void hideKeyboard() {
         InputMethodManager inputMethodManager = (InputMethodManager) this.getSystemService(Activity.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(), 0);
+    }
+
+    @Override
+    public void onReceiveResult(int resultCode, Bundle resultData) {
+
+        if (resultCode == Config.ERROR_CODE) {
+            String error = resultData.getString(Config.API_SERVICE_RESPONSE);
+            mProgress.setVisibility(View.GONE);
+            Snackbar.make(findViewById(android.R.id.content), error, Snackbar.LENGTH_SHORT).show();
+        }else {
+            Movies respons = (Movies) resultData.getSerializable(Config.API_SERVICE_RESPONSE);
+            mMovieAdapter.addData(respons.getMovieDetailList());
+            mProgress.setVisibility(View.GONE);
+            mMovieListRecyclerView.setVisibility(View.VISIBLE);
+        }
     }
 }

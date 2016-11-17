@@ -12,5 +12,10 @@ public class Config {
     public static String BUNDLE_MOVIE ="MovieDetail";
     public static String BUNDLE_IMAGE ="ImageDownloaded";
     public static String NO_MOVIES_ERROR="No movies found, try different";
+    public static String MOVIE_SERVICE_PARAM="movieTag";
+    public static String API_SERVICE_RESPONSE="apiResponse";
+    public static int ERROR_CODE=1;
+    public static int GOOD_CODE=0;
+
 
 }

@@ -2,7 +2,8 @@ package squaring.vitrox.icepj.Network;
 
 import android.app.IntentService;
 import android.content.Intent;
-
+import android.os.Bundle;
+import android.support.v4.os.ResultReceiver;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -15,24 +16,22 @@ import squaring.vitrox.icepj.Helper.Config;
 import squaring.vitrox.icepj.Model.ApiResponse;
 import squaring.vitrox.icepj.Model.Movie;
 import squaring.vitrox.icepj.Model.MovieDetail;
-
-/**
- * Created by miguelgomez on 11/10/16.
- */
+import squaring.vitrox.icepj.Model.Movies;
 
 public class RestApiService extends IntentService {
 
    private static String mServiceName="RestService";
     List<Movie> mMovies;
     private static String NOMOVIES = "False";
-
     public RestApiService() {
         super(mServiceName);
     }
-
+    private ResultReceiver rec;
     @Override
     protected void onHandleIntent(Intent intent) {
-        String movieText="";
+        String error=null;
+        rec = intent.getParcelableExtra("hh");
+        String movieText= intent.getStringExtra(Config.MOVIE_SERVICE_PARAM);
         URL url;
         HttpURLConnection urlConnection = null;
         ApiResponse mResponse = new ApiResponse();
@@ -46,7 +45,8 @@ public class RestApiService extends IntentService {
             mResponse = mapper.readValue(urlConnection.getInputStream(), ApiResponse.class);
 
         } catch (Exception e) {
-            //mDispatcher.onError(e.getMessage());
+            error= e.getMessage();
+
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -55,11 +55,11 @@ public class RestApiService extends IntentService {
         /* IF THE RESPONSE FROM SERVER IS NOT MOVIES FOUND THEN IT SEND ERROR TO VIEW */
         mMovies = mResponse.getSearch();
         String have_movies = mResponse.getResponse();
-        if (have_movies.contains(NOMOVIES)) {
-            return null;
-        }
-        /*  SEARCH FOR EACH MOVIE ON LIST THE MOVIE DETAIL */
         List<MovieDetail> MovDetail = new ArrayList<>();
+        if (have_movies.contains(NOMOVIES)) {
+            error=Config.NO_MOVIES_ERROR;
+        }else{
+        /*  SEARCH FOR EACH MOVIE ON LIST THE MOVIE DETAIL */
         for (Movie mov : mMovies) {
             try {
                 URL newUrl = new URL(Config.URL_MOVIE_DETAIL + mov.getImdbID());
@@ -67,13 +67,24 @@ public class RestApiService extends IntentService {
                 MovieDetail movtoadd = mapper.readValue(urlConnection.getInputStream(), MovieDetail.class);
                 MovDetail.add(movtoadd);
             } catch (Exception e) {
-               // mDispatcher.onError(e.getMessage());
-
+                error= e.getMessage();
             }
+        }
         }
         if (urlConnection != null) {
             urlConnection.disconnect();
         }
-        //return MovDetail;
+
+        if (error!=null)
+        {
+            Bundle b = new Bundle();
+            b.putString(Config.API_SERVICE_RESPONSE, error);
+            rec.send(1, b);
+        }else {
+            Bundle b = new Bundle();
+            Movies mv = new Movies(MovDetail);
+            b.putSerializable(Config.API_SERVICE_RESPONSE, mv);
+            rec.send(0, b);
+        }
     }
 }
